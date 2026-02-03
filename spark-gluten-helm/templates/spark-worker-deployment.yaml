@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-worker
+spec:
+  replicas: {{ .Values.spark.worker.replicas }}
+  selector:
+    matchLabels:
+      app: spark-worker
+  template:
+    metadata:
+      labels:
+        app: spark-worker
+    spec:
+      containers:
+        - name: spark-worker
+          image: {{ .Values.image.spark }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /opt/spark/bin/spark-class
+            - org.apache.spark.deploy.worker.Worker
+            - spark://spark-master:7077
+          ports:
+            - containerPort: {{ .Values.spark.worker.webPort }}
+          env:
+            - name: SPARK_WORKER_CORES
+              value: {{ .Values.spark.worker.cores | quote }}
+            - name: SPARK_WORKER_MEMORY
+              value: {{ .Values.spark.worker.memory }}

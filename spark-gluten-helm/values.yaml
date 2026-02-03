@@ -1,0 +1,24 @@
+image:
+  spark: sambhav2212/spark-velox:1.2
+  jupyter: sambhav2212/jupyter:1.2
+  pullPolicy: IfNotPresent
+
+service:
+  type: LoadBalancer
+
+spark:
+  master:
+    replicas: 1
+    webPort: 8080
+    rpcPort: 7077
+
+  worker:
+    replicas: 1
+    cores: "4"
+    memory: "8g"
+    webPort: 8081
+
+
+jupyter:
+  port: 8888
+  notebooksPath: /workspace

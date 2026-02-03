@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-jupyter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-jupyter
+  template:
+    metadata:
+      labels:
+        app: spark-jupyter
+    spec:
+      containers:
+        - name: jupyter
+          image: {{ .Values.image.jupyter }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.jupyter.port }}
+          env:
+            - name: SPARK_MASTER
+              value: spark://spark-master:7077
+          volumeMounts:
+            - name: notebooks
+              mountPath: {{ .Values.jupyter.notebooksPath }}
+      volumes:
+        - name: notebooks
+          emptyDir: {}
