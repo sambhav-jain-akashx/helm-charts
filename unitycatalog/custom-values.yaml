@@ -1,0 +1,115 @@
+storage:
+  credentials:
+    gcs:
+      - bucketPath: "gs://sambahv-testing"
+        credentialsSecretName: "gcs-service-account-key"
+      # Add more GCS buckets if needed
+      # - bucketPath: "gs://your-second-bucket"
+      #   credentialsSecretName: "gcs-service-account-1"
+
+# Server Configuration
+
+server:
+  enabled: true
+  replicaCount: 1
+  logLevel: DEBUG
+  config:
+    extraProperties:
+      server.managed-table.enabled: true
+  
+  deployment:
+    image:
+      repository: unitycatalog/unitycatalog
+      tag: "v0.3.1"
+      pullPolicy: IfNotPresent
+  
+  service:
+    type: LoadBalancer  # Changed from ClusterIP
+    port: 8080
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+  
+  # Database Configuration for External PostgreSQL
+  database:
+    type: postgresql
+    external: true
+    host: "136.115.150.93"
+    port: 5432
+    name: "ucdb"
+    username: "uc_user"
+    existingSecret: "postgres-credentials"
+    existingSecretPasswordKey: "password"
+  
+  env:
+    - name: GCS_BUCKET_PATH_0
+      value: "gs://sambahv-testing"
+    - name: GCS_JSON_KEY_FILE_PATH_0
+      value: "/home/unitycatalog/etc/conf/gcs-credentials-0.json"
+    - name: HIBERNATE_CONNECTION_DRIVER_CLASS
+      value: "org.postgresql.Driver"
+    - name: HIBERNATE_CONNECTION_URL
+      value: "jdbc:postgresql://136.115.150.93:5432/ucdb"
+    - name: HIBERNATE_CONNECTION_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: postgres-credentials
+          key: username
+    - name: HIBERNATE_CONNECTION_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: postgres-credentials
+          key: password  
+  
+
+  persistence:
+    enabled: true
+    storageClass: "standard"
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+# UI Configuration
+ui:
+  enabled: true
+  replicaCount: 1
+  
+  deployment1:
+    image:
+      repository: unitycatalog/unitycatalog-ui
+      tag: "v0.3.1"
+      pullPolicy: IfNotPresent
+  
+  service:
+    type: LoadBalancer
+    port: 3000
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  
+  # UI connects to server via LoadBalancer IP
+  env:
+    - name: REACT_APP_UC_SERVER_URL
+      value: "http://unitycatalog-server:8080"
+
+# Disable Ingress since no domain
+ingress:
+  enabled: false
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+serviceAccount:
+  create: true
+  name: unitycatalog
